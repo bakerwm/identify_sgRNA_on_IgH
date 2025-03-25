@@ -7,21 +7,21 @@
 
 # Description:
 #
-# Design sgRNAs (SpCas9, NGG) targeting IgH cluster and its downstream region, 2 Mbp.
+# Design sgRNAs (SpCas9, NGG) targeting IgH cluster and its upstream region, 2 Mbp.
 #
 # How-To:
-# 1. Identify IgH cluster region and its downstream region in mouse (GRCm38, Ensembl release 102)
-#    - IgH cluster: chr12:113,254,829-116,010,093 (-) (GRCm38/mm10)
-#    - IgH cluster and downstream 2 Mbp: chr12:111,254,829-118,010,093 (-) (GRCm38/mm10)
-# 2. Identify tandom repeat sequences in the IgH cluster and its downstream region
+# 1. Identify IgH cluster region and its upstream region in human (GRCh38, Ensembl release 102)
+#    - chr14:105,583,730-106,879,812 (-) (GRCh38/hg38)
+#    - IgH cluster and upstream 2 Mbp: chr14:105,583,730-108,879,812 (-) (GRCh38/hg38)
+# 2. Identify tandom repeat sequences in the IgH cluster and its upstream region
 # 3. Design sgRNAs targeting the random repeat sequences, on consensus sequence
 # 4. Remove off-target sgRNAs (bowtie2 alignment)
 # 5. Generate report
 #
 # Input:
-#    - Mouse reference genome (GRCm38/mm10)
-#    - Mouse annotation (GRCm38/mm10)
-#    - IgH cluster and its downstream region (GRCm38/mm10)
+#    - Human reference genome (GRCh38/hg38)
+#    - Human annotation (GRCh38/hg38)
+#    - IgH cluster and its upstream region (GRCh38/hg38)
 #
 # Output:
 #    - results/sgrna/sgrna_candidates.on_target.txt
@@ -43,13 +43,13 @@
 
 ################################################################################
 # BEGIN: GLOBAL VARIABLES                                                      #
-GENOME_BUILD="GRCm38"
+GENOME_BUILD="GRCh38"
 RELEASE=102
 FLANKING_DISTANCE=2000000  # 2 Mbp around IgH genes
-IgH_REGION="12"  # Mouse IgH is on chromosome 12
+IgH_REGION="14"  # Human IgH is on chromosome 14
 MIN_COPY=10      # Minimum copy number of repeat sequences
 MIN_LENGTH=13    # Minimum length of repeat sequences
-BOWTIE2_IDX="/data/biodata/genome_db/GRCm38/Ensembl/bowtie2_index/GRCm38"
+BOWTIE2_IDX="/data/biodata/genome_db/GRCh38/Ensembl/bowtie2_index/GRCh38"
 # END: GLOBAL VARIABLES                                                        #
 ################################################################################
 
@@ -68,8 +68,8 @@ GENOME_GTF="${GENOME_DIR}/${GENOME_BUILD}.gtf"
 # Create necessary directories
 mkdir -p $GENOME_DIR $OUTPUT_DIR $SCRIPTS_DIR
 ################################################################################
-# Step 1: Download mouse reference genome if not already present
-echo "Step 1: Preparing mouse reference genome, annotation-GTF..."
+# Step 1: Download human reference genome if not already present
+echo "Step 1: Preparing human reference genome, annotation-GTF..."
 bash ${SCRIPTS_DIR}/01.download_genome.sh ${GENOME_BUILD} ${GENOME_DIR} ${RELEASE}
 
 # Step 2: Identify IgH gene locations
@@ -83,11 +83,11 @@ fi
 
 # Step 3: Extract sequences from regions around IgH genes
 echo "Step 3: Extracting sequences from IgH regions and flanking regions..."
-# left flanking region: 2 Mbp
-flanking_bed="${OUTPUT_DIR}/igh_regions_flank_left_2Mb.bed"
-flanking_fa="${OUTPUT_DIR}/igh_regions_flank_left_2Mb.fa"
+# human, upstream, right flanking region: 2 Mbp
+flanking_bed="${OUTPUT_DIR}/igh_regions_flank_right_2Mb.bed"
+flanking_fa="${OUTPUT_DIR}/igh_regions_flank_right_2Mb.fa"
 if [ ! -f ${flanking_bed} ]; then
-    bedtools slop -l ${FLANKING_DISTANCE} -r 0 -g ${GENOME_FAI} \
+    bedtools slop -l 0 -r ${FLANKING_DISTANCE} -g ${GENOME_FAI} \
         -i ${OUTPUT_DIR}/igh_regions.bed  \
         > ${flanking_bed}
     bedtools getfasta -fi ${GENOME_FASTA} -bed ${flanking_bed} -fo ${flanking_fa}

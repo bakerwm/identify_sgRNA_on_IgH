@@ -42,9 +42,8 @@ main () {
 
     # urls of Ensembl release
     local release=102
-    local url_fa="https://ftp.ensembl.org/pub/release-${release}/fasta/mus_musculus/dna/Mus_musculus.${genome_build}.dna.primary_assembly.fa.gz"
-    local url_gtf="https://ftp.ensembl.org/pub/release-${release}/gtf/mus_musculus/Mus_musculus.${genome_build}.${release}.gtf.gz"
-
+    local url_fa="https://ftp.ensembl.org/pub/release-${release}/fasta/homo_sapiens/dna/Homo_sapiens.${genome_build}.dna.primary_assembly.fa.gz"
+    local url_gtf="https://ftp.ensembl.org/pub/release-${release}/gtf/homo_sapiens/Homo_sapiens.${genome_build}.${release}.gtf.gz"
     # download genome fasta file
     mkdir -p ${genome_dir}
 
