@@ -1,0 +1,10 @@
+# ignore all files in genome/ and results/
+genome/
+results/
+
+# ignore temporary files and logs
+tmp.*
+log.*
+*.log
+*.err
+*.out
