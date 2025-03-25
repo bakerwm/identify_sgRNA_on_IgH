@@ -1,21 +1,20 @@
-# Identify sgRNAs tageting IgH cluster in human genome
+# Identify sgRNAs tageting chromosome 21 human genome
 
 ## Criteria
 + sgRNA is 23mer and ending with GG
 + sgRNA targets should be in tandom repeat (copy number > 10)
-+ sgRNA targeting IgH and its **upstream** 2 Mbp region
-+ sgRNA MUST not targeting other regions (off-target)
++ sgRNA targeting chromosome 21 of human genome
++ sgRNA MUST not targeting MOUSE genome (off-target)
 
 ## Pipeline Overview
 
 This pipeline performs the following steps:
 
 1. Download and prepare the human reference genome (fasta, gtf) (GRCh38)
-2. Identify IgH gene locations in the human genome (gene_name: IGH, Igh)
 3. Detect tandom repeats using Tandem Repeats Finder (TRF)
 4. Filter repeats based on criteria (length > 13bp, copy number > 10)
 5. Extract candidate sgRNA loci, 23 bp in length and ending with GG (SpCas9)
-6. Remove off-targets by genome-wide alignment
+6. Remove off-targets by genome-wide alignment to MOUSE genome
 
 ## Requirements
 
@@ -62,6 +61,19 @@ The pipeline generates the following outputs in the `results` directory:
 - `repeats/all_repeats.filtered.bed`: BED6+1 file of tandom repeats
 - `sgRNA/`: Directory containing sgRNA sequences and files
 - `sgRNA/sgrna_raw.on_target.txt`: BED6+4 file of on target sgRNAs
+
+**output sgRNA**: sgRNA/sgrna_raw.on_target.txt
+    BED6+4 format, columns:
+    + 1. chr name
+    + 2. start
+    + 3. end
+    + 4. repeat_name
+    + 5. copy_number
+    + 6. strand
+    + 7. consensus_sequence
+    + 8. sgRNA_direction
+    + 9. sgRNA_id
+    + 10. sgRNA_sequence
 
 ## Customization
 

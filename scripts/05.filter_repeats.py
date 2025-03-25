@@ -28,6 +28,7 @@ columns:
 """
 
 import argparse
+import re
 import os
 import sys
 
@@ -96,24 +97,29 @@ def extract_chromosome_wide_coordinates(bed_record):
     Returns:
         list: Modified BED record with chromosome-wide coordinates
     """
-    # Parse the chromosome region from the first field
-    chrom_region = bed_record[0].split(':')
-    chromosome = chrom_region[0]
-    region_start, region_end = map(int, chrom_region[1].split('-'))
-    
-    # Parse the local repeat coordinates 
-    local_start = int(bed_record[1])
-    local_end = int(bed_record[2])
-    
-    # Calculate chromosome-wide coordinates
-    chrom_wide_start = region_start + local_start
-    chrom_wide_end = region_start + local_end
-    
-    # Create new record with chromosome-wide coordinates
-    new_record = bed_record.copy()
-    new_record[0] = chromosome
-    new_record[1] = str(chrom_wide_start)
-    new_record[2] = str(chrom_wide_end)
+    # check if chr:start-end format
+    pattern = r'.*:\d+-\d+$'
+    if re.match(pattern, bed_record[0]):
+        # Parse the chromosome region from the first field
+        chrom_region = bed_record[0].split(':')
+        chromosome = chrom_region[0]
+        region_start, region_end = map(int, chrom_region[1].split('-'))
+        
+        # Parse the local repeat coordinates 
+        local_start = int(bed_record[1])
+        local_end = int(bed_record[2])
+        
+        # Calculate chromosome-wide coordinates
+        chrom_wide_start = region_start + local_start
+        chrom_wide_end = region_start + local_end
+        
+        # Create new record with chromosome-wide coordinates
+        new_record = bed_record.copy()
+        new_record[0] = chromosome
+        new_record[1] = str(chrom_wide_start)
+        new_record[2] = str(chrom_wide_end)
+    else:
+        new_record = bed_record.copy() # not changed
     
     return new_record
 

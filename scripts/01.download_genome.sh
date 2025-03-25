@@ -6,7 +6,7 @@
 # Version: 1.0
 
 # Description:
-#   Download mouse reference genome (GRCm38.102) and gene annotation (GRCm38.102.gtf)
+#   Download human reference genome (GRCh38.102) and gene annotation (GRCh38.102.gtf)
 #
 # Usage:
 #   bash 01.download_genome.sh <genome_directory> <genome_build>
@@ -18,17 +18,14 @@ main () {
         echo "Usage: $0 <genome_build> <output_dir> [release:102]"
         exit 1
     fi
-    local genome_build=$1  # eg: GRCm38, GRCm39
+    local genome_build=$1  # eg: GRCh38, GRCh39
     local genome_dir=$2    # eg: genome/
     local release=${3:-102}      # eg: 102
   
     if [ -z "${release}" ]; then
         case ${genome_build} in
-            GRCm38)
+            GRCh38)
                 release=102
-                ;;
-            GRCm39)
-                release=111
                 ;;
             *)
                 echo "Error: Unsupported genome build: ${genome_build}"

@@ -41,10 +41,10 @@ map_to_genome() {
 }
 
 # Find off-target sgRNAs
-# Args: <off_target_file> <aln.bam> <target_regions_bed>
+# Args: <off_target_file> <aln.bam> [target_regions_bed]
 find_off_targets() {
-    [[ $# -ne 3 ]] && {
-        echo "Usage: ./map_sgrna_to_genome.sh <off_target_file> <aln.bam> <target_regions_bed>"
+    [[ $# -lt 2 ]] && {
+        echo "Usage: ./find_off_targets <off_target_file> <aln.bam> [target_regions_bed]"
         exit 1
     }
     local off_target_file=$1
@@ -78,15 +78,16 @@ find_off_targets() {
 
 # Args: <output_dir> <sgrna.txt> <bowtie2_idx> [n_cpu] [target_regions_bed]
 main() {
-    [[ $# -lt 3 ]] && {
-        echo "Usage: ./map_sgrna_to_genome.sh <output_dir> <sgrna.txt> <bowtie2_idx> [n_cpu] [target_regions_bed]"
+    [[ $# -lt 4 ]] && {
+        echo "Usage: ./remove_off_targets.sh <output_dir> <sgrna.txt> <bowtie2_idx_off_target> <bowtie2_idx_on_target> [n_cpu] [target_regions_bed]"
         exit 1
     }
     local output_dir=$1
     local sgrna_txt=$2  # including id and seq in column-9 and column-10
-    local bowtie2_idx=$3
-    local n_cpu=${4:-8} # default 8 threads
-    local target_bed=${5:-""} # optional
+    local bowtie2_idx_off_target=$3
+    local bowtie2_idx_on_target=$4
+    local n_cpu=${5:-8} # default 8 threads
+    local target_bed=${6:-""} # optional
 
     local prefix="$(basename ${sgrna_txt} .txt)"
     mkdir -p ${output_dir}
@@ -96,30 +97,42 @@ main() {
     local sgrna_fa="${output_dir}/${prefix}.fa"
     awk '{print ">" $9 "\n" $10}' ${sgrna_txt} > ${sgrna_fa}
 
-    # Step2. map sgRNA sequences to reference genome
-    local aln_bam="${output_dir}/${prefix}.aln_all.bam"
-    map_to_genome ${sgrna_fa} ${aln_bam} ${bowtie2_idx} ${n_cpu}
+    ############################################################################
+    # on-target alignment                                                      #
+    ############################################################################
+    # Step2a. map to target genome (human chr21)
+    local aln_bam="${output_dir}/${prefix}.aln.bam"
+    local aln_id_file="${output_dir}/${prefix}.aln_ids.txt"
+    map_to_genome ${sgrna_fa} ${aln_bam} ${bowtie2_idx_on_target} ${n_cpu} ${target_bed}
+    samtools view ${aln_bam} | awk '{print $1}' | sort | uniq > ${aln_id_file}
 
-    # Step3. Extract aligned sgRNAs
-    local aligned_id_file="${output_dir}/${prefix}.aligned_ids.txt"
-    samtools view ${aln_bam} | awk '{print $1}' | sort | uniq > ${aligned_id_file}
+    ############################################################################
+    # off-target alignment                                                     #
+    ############################################################################
+    # Step3a. map to off-target genome
+    local off_target_bam="${output_dir}/${prefix}.off_target.bam"
+    local off_target_id_file="${output_dir}/${prefix}.off_target_ids.txt"
+    map_to_genome ${sgrna_fa} ${off_target_bam} ${bowtie2_idx_off_target} ${n_cpu}
+    samtools view ${off_target_bam} | awk '{print $1}' | sort | uniq > ${off_target_id_file}
 
-    # Step4. Extract off-target sgRNAs, ids
-    local off_target_file="${output_dir}/${prefix}.off_target.txt"
-    find_off_targets ${off_target_file} ${aln_bam} ${target_bed} 
-    
-    # Step4.remove off-target ids
-    local on_target_ids="${output_dir}/${prefix}.on_target_ids.txt"
+    ############################################################################
+    # remove off-target ids                                                    #
+    ############################################################################
+    # Step4. remove off-target ids
+    local on_target_id_file="${output_dir}/${prefix}.on_target_ids.txt"
+    # cat ${off_target_id_file} ${aln_id_file} | sort | uniq -u > ${on_target_id_file}
+    awk 'NR==FNR {ids[$1]; next} {if ($1 in ids) {next} else {print $0}}' ${off_target_id_file} ${aln_id_file} > ${on_target_id_file}
+
+    # Step5. Extract on-target sgRNAs
     local on_target_file="${output_dir}/${prefix}.on_target.txt"
-    cat ${off_target_file} ${aligned_id_file} | sort | uniq -u > ${on_target_ids}
     # column-9: id, column-10: seq in sgrna_txt file
-    awk 'NR==FNR {ids[$1]; next} {if ($9 in ids) {print $0}}' ${on_target_ids} ${sgrna_txt} > ${on_target_file}
+    awk 'NR==FNR {ids[$1]; next} {if ($9 in ids) {print $0}}' ${on_target_id_file} ${sgrna_txt} > ${on_target_file}
 
     # Summary
     local n_input=$(wc -l <${sgrna_txt})
-    local n_aln=$(samtools view ${aln_bam} | awk '{print $1}' | sort | uniq | wc -l)
-    local n_off_target=$(wc -l <${off_target_file})
-    local n_on_target=$(wc -l <${on_target_file})
+    local n_aln=$(wc -l <${aln_id_file})
+    local n_off_target=$(wc -l <${off_target_id_file})
+    local n_on_target=$(wc -l <${on_target_id_file})
     # report
     echo "  >sgRNAs input: ${n_input}"
     echo "  >sgRNAs aligned: ${n_aln}"

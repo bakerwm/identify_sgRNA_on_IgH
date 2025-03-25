@@ -7,21 +7,19 @@
 
 # Description:
 #
-# Design sgRNAs (SpCas9, NGG) targeting IgH cluster and its upstream region, 2 Mbp.
+# Design sgRNAs (SpCas9, NGG) targeting chromosome 21 of human genome
 #
 # How-To:
-# 1. Identify IgH cluster region and its upstream region in human (GRCh38, Ensembl release 102)
-#    - chr14:105,583,730-106,879,812 (-) (GRCh38/hg38)
-#    - IgH cluster and upstream 2 Mbp: chr14:105,583,730-108,879,812 (-) (GRCh38/hg38)
-# 2. Identify tandom repeat sequences in the IgH cluster and its upstream region
+# 1. Identify chromosome 21 of human genome (GRCh38, Ensembl release 102)
+#    - chr21 (GRCh38/hg38)
+# 2. Identify tandom repeat sequences
 # 3. Design sgRNAs targeting the random repeat sequences, on consensus sequence
-# 4. Remove off-target sgRNAs (bowtie2 alignment)
+# 4. Remove off-target sgRNAs (bowtie2 alignment to MOUSE genome)
 # 5. Generate report
 #
 # Input:
 #    - Human reference genome (GRCh38/hg38)
-#    - Human annotation (GRCh38/hg38)
-#    - IgH cluster and its upstream region (GRCh38/hg38)
+#    - MOUSE genome (GRCm38/mm10)
 #
 # Output:
 #    - results/sgrna/sgrna_candidates.on_target.txt
@@ -45,11 +43,11 @@
 # BEGIN: GLOBAL VARIABLES                                                      #
 GENOME_BUILD="GRCh38"
 RELEASE=102
-FLANKING_DISTANCE=2000000  # 2 Mbp around IgH genes
-IgH_REGION="14"  # Human IgH is on chromosome 14
+# FLANKING_DISTANCE=2000000  # 2 Mbp around IgH genes
+# IgH_REGION="14"  # Human IgH is on chromosome 14
 MIN_COPY=10      # Minimum copy number of repeat sequences
 MIN_LENGTH=13    # Minimum length of repeat sequences
-BOWTIE2_IDX="/data/biodata/genome_db/GRCh38/Ensembl/bowtie2_index/GRCh38"
+BOWTIE2_IDX="/data/biodata/genome_db/GRCm38/Ensembl/bowtie2_index/GRCm38" # MOUSE genome
 # END: GLOBAL VARIABLES                                                        #
 ################################################################################
 
@@ -64,7 +62,7 @@ OUTPUT_DIR="results"
 SCRIPTS_DIR="scripts"
 GENOME_FASTA="${GENOME_DIR}/${GENOME_BUILD}.fa"
 GENOME_FAI="${GENOME_DIR}/${GENOME_BUILD}.fa.fai"
-GENOME_GTF="${GENOME_DIR}/${GENOME_BUILD}.gtf"
+# GENOME_GTF="${GENOME_DIR}/${GENOME_BUILD}.gtf"
 # Create necessary directories
 mkdir -p $GENOME_DIR $OUTPUT_DIR $SCRIPTS_DIR
 ################################################################################
@@ -72,27 +70,28 @@ mkdir -p $GENOME_DIR $OUTPUT_DIR $SCRIPTS_DIR
 echo "Step 1: Preparing human reference genome, annotation-GTF..."
 bash ${SCRIPTS_DIR}/01.download_genome.sh ${GENOME_BUILD} ${GENOME_DIR} ${RELEASE}
 
-# Step 2: Identify IgH gene locations
-echo "Step 2: Identifying IgH gene locations..."
-igh_regions_bed="${OUTPUT_DIR}/igh_regions.bed"
-if [ ! -f ${igh_regions_bed} ]; then
-    python ${SCRIPTS_DIR}/02.identify_igh_genes.py \
-        --gtf ${GENOME_GTF} \
-        --output ${igh_regions_bed}
+# Step 2: Extracting chromosome 21 sequences
+echo "Step 2: Extracting chromosome 21 sequences..."
+chr_21_fa="${OUTPUT_DIR}/chr_21.fa"
+BOWTIE2_IDX_CHR21="${OUTPUT_DIR}/chr_21" # see step7. remove off-target sgRNAs
+if [ ! -f ${chr_21_fa} ]; then
+    samtools faidx ${GENOME_FASTA} 21 > ${chr_21_fa}
+    # generate bowtie2 index
+    bowtie2-build -q --threads ${N_CPU} ${chr_21_fa} ${BOWTIE2_IDX_CHR21}
 fi
 
-# Step 3: Extract sequences from regions around IgH genes
-echo "Step 3: Extracting sequences from IgH regions and flanking regions..."
-# human, upstream, right flanking region: 2 Mbp
-flanking_bed="${OUTPUT_DIR}/igh_regions_flank_right_2Mb.bed"
-flanking_fa="${OUTPUT_DIR}/igh_regions_flank_right_2Mb.fa"
-if [ ! -f ${flanking_bed} ]; then
-    bedtools slop -l 0 -r ${FLANKING_DISTANCE} -g ${GENOME_FAI} \
-        -i ${OUTPUT_DIR}/igh_regions.bed  \
-        > ${flanking_bed}
-    bedtools getfasta -fi ${GENOME_FASTA} -bed ${flanking_bed} -fo ${flanking_fa}
-    # alternative: use samtools faidx <genome.fa> <region> > <output.fa>
-fi
+# # Step 3: Extract sequences from regions around IgH genes
+# echo "Step 3: Extracting sequences from IgH regions and flanking regions..."
+# # human, upstream, right flanking region: 2 Mbp
+# flanking_bed="${OUTPUT_DIR}/igh_regions_flank_right_2Mb.bed"
+# flanking_fa="${OUTPUT_DIR}/igh_regions_flank_right_2Mb.fa"
+# if [ ! -f ${flanking_bed} ]; then
+#     bedtools slop -l 0 -r ${FLANKING_DISTANCE} -g ${GENOME_FAI} \
+#         -i ${OUTPUT_DIR}/igh_regions.bed  \
+#         > ${flanking_bed}
+#     bedtools getfasta -fi ${GENOME_FASTA} -bed ${flanking_bed} -fo ${flanking_fa}
+#     # alternative: use samtools faidx <genome.fa> <region> > <output.fa>
+# fi
 
 # Step 4: Find repeat sequences in the extracted regions
 # Using only TRF and RepeatMasker (skipping k-mer analysis and MISA)
@@ -100,7 +99,7 @@ echo "Step 4: Finding repeat sequences..."
 raw_repeats_bed="${OUTPUT_DIR}/repeats/all_repeats.raw.bed"
 if [ ! -f ${raw_repeats_bed} ]; then
     bash ${SCRIPTS_DIR}/03.find_repeats.sh \
-        ${flanking_fa} \
+        ${chr_21_fa} \
         ${raw_repeats_bed} \
         ${MIN_LENGTH} \
         ${MIN_COPY}
@@ -129,13 +128,14 @@ fi
 
 # Step 7: Map sgRNA sequences to reference genome
 # Args: <output_dir> <sgrna.txt> <bowtie2_idx> [n_cpu] [target_regions_bed]
-echo "Step 7: remove off-target sgRNAs..."
+echo "Step 7: Removing off-target sgRNAs..."
+# see step2. BOWTIE2_IDX_CHR21
 bash ${SCRIPTS_DIR}/07.remove_off_targets.sh \
     ${OUTPUT_DIR}/sgRNA \
     ${sgrna_txt} \
     ${BOWTIE2_IDX} \
-    ${N_CPU} \
-    ${OUTPUT_DIR}/igh_regions.bed
+    ${BOWTIE2_IDX_CHR21} \
+    ${N_CPU}
 
 # Step 8: Generate summary and report
 echo "Step 8: Generating report..."
