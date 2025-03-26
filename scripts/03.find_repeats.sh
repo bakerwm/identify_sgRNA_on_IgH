@@ -64,35 +64,11 @@
 
 set -e  # Exit on error
 
-# switch to conda environment: trf
-switch_trf_env() {
-    local conda_path=${HOME}/miniforge3/etc/profile.d/conda.sh
-
-    # Check if conda is installed
-    if ! command -v conda &> /dev/null; then
-        echo "Error: conda could not be found"
-        return 1
-    fi
-
-    # Check if kraken2 is activated
-    local current_env=$CONDA_DEFAULT_ENV
-    
-    # Check if trf is already activated
-    if [[ "${current_env}" != "trf" ]]; then
-        source ${conda_path}
-        if ! conda activate trf &> /dev/null; then
-            echo "Error: trf could not be activated"
-            return 1
-        fi
-    fi
-
-    # Check if trf is installed
-    if ! command -v trf &> /dev/null; then
-        echo "Error: trf could not be found"
-        return 1
-    fi
-}
-export -f switch_trf_env
+# check command
+if ! command -v trf &> /dev/null; then
+    echo "Error: trf not found, please switch to find_sgrna env"
+    exit 1
+fi
 
 # Args: <input.fa> <output_dir>
 run_trf() {
@@ -111,7 +87,6 @@ run_trf() {
         echo "  > TRF Done."
     else 
         mkdir -p ${output_dir}
-        switch_trf_env
 
         # remove existing .dat file
         if ls *.dat > /dev/null 2>&1; then

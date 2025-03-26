@@ -16,18 +16,19 @@ Example:
 Sequence: 12:111254829-116010093
 584 644 20 3.3 20 70 25 71 11 31 39 18 1.86 GCCTGGGTCAGCATGGCCCT GCCTGGGTCAGCATGGCCCTGCCTGGGAAGCATGGCCTGGGTCAGCATGGCCCTGCCTGGG
 
-column-1: start (584)
-column-2: end (644)
-column-3: repeat size (20)
-column-4: copy number (3.3)
-column-5: consensus size (20)
-column-6: percent of matches (70)
-column-7: percent of indels (25)
-column-8: alignment score (71)
-column-9-12: percent composition for each of the four nucleotides, A, C, G, T (11 31 39 18)
-column-13: entropy measure based on percent composition (1.86)
-column-14: consensus sequence (GCCTGGGTCAGCATGGCCCT)
-column-15: repeat sequence (GCCTGGGTCAGCATGGCCCTGCCTGGGAAGCATGGCCTGGGTCAGCATGGCCCTGCCTGGG)
+columns:
+1: start (584)
+2: end (644)
+3: repeat size (20)
+4: copy number (3.3)
+5: consensus size (20)
+6: percent of matches (70)
+7: percent of indels (25)
+8: alignment score (71)
+9-12: percent composition for each of the four nucleotides, A, C, G, T (11 31 39 18)
+13: entropy measure based on percent composition (1.86)
+14: consensus sequence (GCCTGGGTCAGCATGGCCCT)
+15: repeat sequence (GCCTGGGTCAGCATGGCCCTGCCTGGGAAGCATGGCCTGGGTCAGCATGGCCCTGCCTGGG)
 
 Source:
 Table Explanation:
