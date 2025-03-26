@@ -136,7 +136,7 @@ bash ${SCRIPTS_DIR}/07.remove_off_targets.sh \
     ${sgrna_txt} \
     ${BOWTIE2_IDX} \
     ${N_CPU} \
-    ${OUTPUT_DIR}/igh_regions.bed
+    ${flanking_bed}
 
 # Step 8: Generate summary and report
 echo "Step 8: Generating report..."
