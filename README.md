@@ -1,9 +1,9 @@
-# Identify sgRNAs tageting IgH cluster in mouse
+# Identify sgRNAs tageting IgH cluster in mouse genome
 
 ## Criteria
 + sgRNA is 23mer and ending with GG
 + sgRNA targets should be in tandom repeat (copy number > 10)
-+ sgRNA targeting IgH and its downstream 2 Mbp region
++ sgRNA targeting IgH and its **downstream** 2 Mbp region
 + sgRNA MUST not targeting other regions (off-target)
 
 ## Pipeline Overview
@@ -25,11 +25,19 @@ The pipeline requires the following tools and packages:
   - pybedtools
   - biopython
   - NumPy
+- bowtie2
 - samtools
 - bedtools
 - trf (Tandem Repeats Finder)
 
 ## Usage
+
+Install and activate the conda env
+
+```bash
+conda env create -f find_sgrna.yml
+conda activate find_sgrna
+```
 
 To run the complete pipeline:
 
@@ -67,16 +75,16 @@ The pipeline generates the following outputs in the `results` directory:
 
 file: `results/sgRNA/sgrna_raw.on_target.txt`
 columns:
-  + 1. chromosome  
-  + 2. start  
-  + 3. end  
-  + 4. tandom_repeat_name  
-  + 5. copy_number  
-  + 6. strand  
-  + 7. consensus_sequence  
-  + 8. direction_of_sgRNA:fwd/rev  
-  + 9. sgRNA_id  
-  + 10. sgRNA_sequence
+1. chromosome  
+2. start  
+3. end  
+4. tandom_repeat_name  
+5. copy_number  
+6. strand  
+7. consensus_sequence  
+8. direction_of_sgRNA:fwd/rev  
+9. sgRNA_id  
+10. sgRNA_sequence
 
 ## Customization
 
@@ -84,11 +92,13 @@ You can modify the following parameters in the workflow script:
 
 - `GENOME_BUILD`: GRCm38
 - `RELEASE`: Ensembl release, eg: 102
-- `GENOME_DIR`: Directory for genome files
-- `OUTPUT_DIR`: Directory for output files
+- `BOWTIE2_IDX`: Bowtie2 index, if not specified, will build in `${GENOME_DIR}`
 - `FLANKING_DISTANCE`: Flanking distance around IgH genes (default: 2 Mbp)
 - `MIN_LENGTH`: Minimum length of repeats (default: 13 bp)
 - `MIN_COPY_NUMBER`: Minimum copy number (default: 10)
+- `N_CPU`: Number of CPUs to run program (default: 12)
+- `GENOME_DIR`: Directory for genome files (default: genome)
+- `OUTPUT_DIR`: Directory for output files (default: results)
 
 ## License
 
@@ -97,5 +107,4 @@ This software is provided under the MIT License.
 ## Citation
 
 If you use this pipeline in your research, please cite:
-
-[Citation information] 
+`https://github.com/bakerwm/identify_sgRNA_on_IgH`
