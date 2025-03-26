@@ -70,9 +70,9 @@ The pipeline generates the following outputs in the `results` directory:
 - `sgRNA/`: Directory containing sgRNA sequences and files
 - `sgRNA/sgrna_raw.on_target.txt`: BED6+4 file of on target sgRNAs
 
-**output sgRNA**: sgRNA/sgrna_raw.on_target.txt
-file: `results/sgRNA/sgrna_raw.on_target.txt`
-columns (BED6+4):
+**output sgRNA**: sgRNA/sgrna_raw.on_target.txt  
+
+columns (BED6+4):  
 1. chromosome  
 2. start  
 3. end  
