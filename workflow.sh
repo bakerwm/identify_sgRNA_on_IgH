@@ -41,31 +41,17 @@
 
 set -e  # Exit on error
 
-################################################################################
-# Configuration                                                                #
-GENOME_DIR="genome"
-OUTPUT_DIR="results"
-SCRIPTS_DIR="scripts"
-GENOME_FASTA="${GENOME_DIR}/${GENOME_BUILD}.fa"
-GENOME_FAI="${GENOME_DIR}/${GENOME_BUILD}.fa.fai"
-# GENOME_GTF="${GENOME_DIR}/${GENOME_BUILD}.gtf"
-# Create necessary directories
-mkdir -p $GENOME_DIR $OUTPUT_DIR $SCRIPTS_DIR
-################################################################################
+if [[ $# -ne 1 ]]; then
+    echo "Usage: $0 <config_file>"
+    exit 1
+fi
+config_file=$1
 
-################################################################################
-# BEGIN: GLOBAL VARIABLES                                                      #
-export MOUSE_BUILD="GRCm38"
-export HUMAN_BUILD="GRCh38"
-export RELEASE=102
-export MIN_COPY=10      # Minimum copy number of repeat sequences
-export MIN_LENGTH=13    # Minimum length of repeat sequences
-export HUMAN_CHR21_FA="${GENOME_DIR}/${HUMAN_BUILD}_chr21.fa"
-export HUMAN_CHR21_BOWTIE2_IDX="${GENOME_DIR}/${HUMAN_BUILD}_chr21" # HUMAN chr21
-export MOUSE_BOWTIE2_IDX="/data/biodata/genome_db/GRCm38/Ensembl/bowtie2_index/GRCm38" # MOUSE genome
-export N_CPU=12
-# END: GLOBAL VARIABLES                                                        #
-################################################################################
+if [[ ! -f ${config_file} ]] ; then
+    echo "Error: config file not exists: ${config_file}"
+    exit 1
+fi
+source ${config_file} # load configuration
 
 # Step 1: Download human reference genome if not already present
 echo "Step 1: Preparing human reference genome, annotation-GTF..."
@@ -121,5 +107,9 @@ bash ${SCRIPTS_DIR}/07.remove_off_targets.sh \
 #     --igh_genes ${OUTPUT_DIR}/igh_regions.bed \
 #     --output ${OUTPUT_DIR}/report
 
+# Create symlink to the final sgRNA file
+sgrna_txt="${OUTPUT_DIR}/sgrna_raw.on_target.txt"
+[[ ! -f ${sgrna_txt} ]] && ln -s sgRNA/sgrna_raw.on_target.txt ${OUTPUT_DIR}/
+
 echo "Pipeline completed successfully!"
-echo "Results are available in ${OUTPUT_DIR} directory" 
+echo "Results are available in ${OUTPUT_DIR}/sgrna_raw.on_target.txt" 

@@ -41,7 +41,7 @@ conda activate find_sgrna
 To run the complete pipeline:
 
 ```bash
-bash workflow.sh
+bash workflow.sh config.sh
 ```
 
 ### Individual Components
