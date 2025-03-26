@@ -43,7 +43,7 @@ conda activate find_sgrna
 To run the complete pipeline:
 
 ```bash
-bash workflow.sh
+bash workflow.sh config.sh
 ```
 
 ### Individual Components
@@ -109,4 +109,4 @@ This software is provided under the MIT License.
 
 If you use this pipeline in your research, please cite:
 
-[Citation information] 
+`https://github.com/bakerwm/identify_sgRNA_on_IgH`

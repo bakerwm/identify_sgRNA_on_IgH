@@ -39,23 +39,35 @@
 #
 #
 # Gettig started:
-# $ bash workflow.sh
+# $ bash workflow.sh config.sh
 
 set -e  # Exit on error
 
-################################################################################
-# BEGIN: GLOBAL VARIABLES                                                      #
-export N_CPU=12
-export GENOME_BUILD="GRCm38"
-export RELEASE=102
-export TARGET_BED="igh_regions.bed"  # Required, BED3 format
-export FLANKING_LEFT=2000000  # 2 Mbp around IgH genes
-export FLANKING_RIGHT=0  # 2 Mbp around IgH genes
-export MIN_COPY=10      # Minimum copy number of repeat sequences
-export MIN_LENGTH=13    # Minimum length of repeat sequences
-export BOWTIE2_IDX="/data/biodata/genome_db/GRCm38/Ensembl/bowtie2_index/GRCm38"   # will build bowtie2 index
-# END: GLOBAL VARIABLES                                                        #
-################################################################################
+if [[ $# -ne 1 ]]; then
+    echo "Usage: $0 <config_file>"
+    exit 1
+fi
+config_file=$1
+
+if [[ ! -f ${config_file} ]] ; then
+    echo "Error: config file not exists: ${config_file}"
+    exit 1
+fi
+source ${config_file} # load configuration
+
+# ################################################################################
+# # BEGIN: GLOBAL VARIABLES                                                      #
+# export N_CPU=12
+# export GENOME_BUILD="GRCm38"
+# export RELEASE=102
+# export TARGET_BED="igh_regions.bed"  # Required, BED3 format
+# export FLANKING_LEFT=2000000  # 2 Mbp around IgH genes
+# export FLANKING_RIGHT=0  # 2 Mbp around IgH genes
+# export MIN_COPY=10      # Minimum copy number of repeat sequences
+# export MIN_LENGTH=13    # Minimum length of repeat sequences
+# export BOWTIE2_IDX="/data/biodata/genome_db/GRCm38/Ensembl/bowtie2_index/GRCm38"   # will build bowtie2 index
+# # END: GLOBAL VARIABLES                                                        #
+# ################################################################################
 
 ################################################################################
 # Configuration                                                                #
@@ -146,7 +158,8 @@ bash ${SCRIPTS_DIR}/07.remove_off_targets.sh \
 #     --output ${OUTPUT_DIR}/report
 
 # Create symlink to the final sgRNA file
-ln -s sgRNA/sgrna_raw.on_target.txt ${OUTPUT_DIR}/
+sgrna_txt="${OUTPUT_DIR}/sgrna_raw.on_target.txt"
+[[ ! -f ${sgrna_txt} ]] && ln -s sgRNA/sgrna_raw.on_target.txt ${OUTPUT_DIR}/
 
 echo "Pipeline completed successfully!"
 echo "Results are saved in: ${OUTPUT_DIR}/sgrna_raw.on_target.txt" 
