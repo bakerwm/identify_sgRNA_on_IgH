@@ -67,16 +67,16 @@ The pipeline generates the following outputs in the `results` directory:
 
 file: `results/sgRNA/sgrna_raw.on_target.txt`
 columns:
-  + 1. chromosome  
-  + 2. start  
-  + 3. end  
-  + 4. tandom_repeat_name  
-  + 5. copy_number  
-  + 6. strand  
-  + 7. consensus_sequence  
-  + 8. direction_of_sgRNA:fwd/rev  
-  + 9. sgRNA_id  
-  + 10. sgRNA_sequence
+1. chromosome  
+2. start  
+3. end  
+4. tandom_repeat_name  
+5. copy_number  
+6. strand  
+7. consensus_sequence  
+8. direction_of_sgRNA:fwd/rev  
+9. sgRNA_id  
+10. sgRNA_sequence
 
 ## Customization
 
