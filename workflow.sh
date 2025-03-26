@@ -71,30 +71,7 @@ export N_CPU=12
 echo "Step 1: Preparing human reference genome, annotation-GTF..."
 bash ${SCRIPTS_DIR}/01.download_genome.sh ${MOUSE_BUILD} ${HUMAN_BUILD} ${GENOME_DIR} ${RELEASE}
 
-# # Step 2: Extracting chromosome 21 sequences
-# echo "Step 2: Extracting chromosome 21 sequences..."
-# chr_21_fa="${OUTPUT_DIR}/chr_21.fa"
-# BOWTIE2_IDX_CHR21="${OUTPUT_DIR}/chr_21" # see step7. remove off-target sgRNAs
-# if [ ! -f ${chr_21_fa} ]; then
-#     samtools faidx ${GENOME_FASTA} 21 > ${chr_21_fa}
-#     # generate bowtie2 index
-#     bowtie2-build -q --threads ${N_CPU} ${chr_21_fa} ${BOWTIE2_IDX_CHR21}
-# fi
-
-# # Step 3: Extract sequences from regions around IgH genes
-# echo "Step 3: Extracting sequences from IgH regions and flanking regions..."
-# # human, upstream, right flanking region: 2 Mbp
-# flanking_bed="${OUTPUT_DIR}/igh_regions_flank_right_2Mb.bed"
-# flanking_fa="${OUTPUT_DIR}/igh_regions_flank_right_2Mb.fa"
-# if [ ! -f ${flanking_bed} ]; then
-#     bedtools slop -l 0 -r ${FLANKING_DISTANCE} -g ${GENOME_FAI} \
-#         -i ${OUTPUT_DIR}/igh_regions.bed  \
-#         > ${flanking_bed}
-#     bedtools getfasta -fi ${GENOME_FASTA} -bed ${flanking_bed} -fo ${flanking_fa}
-#     # alternative: use samtools faidx <genome.fa> <region> > <output.fa>
-# fi
-
-# Step 4: Find repeat sequences in the extracted regions
+# Step 2: Find repeat sequences in the extracted regions
 # Using only TRF and RepeatMasker (skipping k-mer analysis and MISA)
 echo "Step 2: Identifying repeat sequences..."
 raw_repeats_bed="${OUTPUT_DIR}/repeats/all_repeats.raw.bed"
@@ -137,8 +114,8 @@ bash ${SCRIPTS_DIR}/07.remove_off_targets.sh \
     ${HUMAN_CHR21_BOWTIE2_IDX} \
     ${N_CPU}
 
-# Step 8: Generate summary and report
-echo "Step 8: Generating report..."
+# # Step 8: Generate summary and report
+# echo "Step 8: Generating report..."
 # python ${SCRIPTS_DIR}/08.generate_report.py \
 #     --repeats ${filtered_repeats_bed} \
 #     --igh_genes ${OUTPUT_DIR}/igh_regions.bed \
