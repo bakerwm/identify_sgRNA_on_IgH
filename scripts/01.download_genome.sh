@@ -7,11 +7,24 @@
 
 # Description:
 #   Download mouse reference genome (GRCm38.102) and gene annotation (GRCm38.102.gtf)
+#   Build bowtie2 index for the genome if required
 #
 # Usage:
 #   bash 01.download_genome.sh <genome_directory> <genome_build>
 
 set -e  # Exit on error
+
+build_bowtie2_index () {
+    [[ $# -ne 2 ]] && { echo "Usage: $0 <genome_fa> <genome_dir>"; exit 1; }
+    local genome_fa=$1
+    local bowtie2_idx=$2
+
+    if bowtie2-inspect -n ${bowtie2_idx} > /dev/null 2>&1; then
+        echo "Bowtie2 index ${bowtie2_idx} already exists"
+    else
+        bowtie2-build --threads ${N_CPU} -q ${genome_fa} ${bowtie2_idx}
+    fi
+}
 
 main () {
     if [ $# -lt 2 ]; then
@@ -65,7 +78,17 @@ main () {
         curl -o ${gtf_file} ${url_gtf}
         gunzip -c ${gtf_file} > ${genome_gtf}
     fi
-    
+
+    # build bowtie2 index
+    local bowtie2_idx=${genome_dir}/${genome_build}
+    if bowtie2-inspect -n ${BOWTIE2_IDX} > /dev/null 2>&1; then
+        echo "  > Bowtie2 index: ${BOWTIE2_IDX}"
+    else
+        echo "  > Building bowtie2 index..."
+        build_bowtie2_index ${genome_fa} ${bowtie2_idx}
+        BOWTIE2_IDX=${bowtie2_idx} # update global variable
+        echo "  > Bowtie2 index: ${BOWTIE2_IDX}"
+    fi
 }
 
 main $@

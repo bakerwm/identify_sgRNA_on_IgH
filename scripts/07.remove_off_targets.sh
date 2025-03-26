@@ -105,26 +105,28 @@ main() {
     samtools view ${aln_bam} | awk '{print $1}' | sort | uniq > ${aligned_id_file}
 
     # Step4. Extract off-target sgRNAs, ids
-    local off_target_file="${output_dir}/${prefix}.off_target.txt"
-    find_off_targets ${off_target_file} ${aln_bam} ${target_bed} 
+    local off_target_id_file="${output_dir}/${prefix}.off_target_ids.txt"
+    find_off_targets ${off_target_id_file} ${aln_bam} ${target_bed}
     
     # Step5.remove off-target ids
-    local on_target_ids="${output_dir}/${prefix}.on_target_ids.txt"
+    local on_target_id_file="${output_dir}/${prefix}.on_target_ids.txt"
     local on_target_file="${output_dir}/${prefix}.on_target.txt"
-    cat ${off_target_file} ${aligned_id_file} | sort | uniq -u > ${on_target_ids}
+    # cat ${off_target_file} ${aligned_id_file} | sort | uniq -u > ${on_target_ids}
+    awk 'NR==FNR {ids[$1]; next} ! ($1 in ids)' ${off_target_id_file} ${aligned_id_file} > ${on_target_id_file}
     # column-9: id, column-10: seq in sgrna_txt file
-    awk 'NR==FNR {ids[$1]; next} {if ($9 in ids) {print $0}}' ${on_target_ids} ${sgrna_txt} > ${on_target_file}
+    awk 'NR==FNR {ids[$1]; next} ($9 in ids)' ${on_target_id_file} ${sgrna_txt} > ${on_target_file}
 
     # Summary
     local n_input=$(wc -l <${sgrna_txt})
-    local n_aln=$(samtools view ${aln_bam} | awk '{print $1}' | sort | uniq | wc -l)
-    local n_off_target=$(wc -l <${off_target_file})
-    local n_on_target=$(wc -l <${on_target_file})
+    local n_aln=$(wc -l <${aligned_id_file})
+    local n_off_target=$(wc -l <${off_target_id_file})
+    local n_on_target=$(wc -l <${on_target_id_file})
     # report
-    echo "  >sgRNAs input: ${n_input}"
-    echo "  >sgRNAs aligned: ${n_aln}"
-    echo "  >sgRNAs off-target: ${n_off_target}"
-    echo "  >sgRNAs on-target: ${n_on_target}"
+    echo "  > sgRNA_stat"
+    echo "  > input:      ${n_input}"
+    echo "  > aligned:    ${n_aln}"
+    echo "  > off-target: ${n_off_target}"
+    echo "  > on-target:  ${n_on_target}"
 }
 
 main $@
