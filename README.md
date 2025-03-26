@@ -32,6 +32,13 @@ The pipeline requires the following tools and packages:
 
 ## Usage
 
+Install and activate the conda env
+
+```bash
+conda env create -f find_sgrna.yml
+conda activate find_sgrna
+```
+
 To run the complete pipeline:
 
 ```bash
