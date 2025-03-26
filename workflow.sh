@@ -7,24 +7,23 @@
 
 # Description:
 #
-# Design sgRNAs (SpCas9, NGG) targeting IgH cluster and its upstream region, 2 Mbp.
+# Design sgRNAs (SpCas9, NGG) targeting specific region on genome
 #
 # How-To:
-# 1. Identify IgH cluster region and its upstream region in human (GRCh38, Ensembl release 102)
-#    - chr14:105,583,730-106,879,812 (-) (GRCh38/hg38)
-#    - IgH cluster and upstream 2 Mbp: chr14:105,583,730-108,879,812 (-) (GRCh38/hg38)
-# 2. Identify tandom repeat sequences in the IgH cluster and its upstream region
+# 1. Identify target region on genome (BED)
+# 2. Identify tandom repeat sequences in the target region
 # 3. Design sgRNAs targeting the random repeat sequences, on consensus sequence
 # 4. Remove off-target sgRNAs (bowtie2 alignment)
-# 5. Generate report
+# 5. (to-do) Filter sgRNA for better performance
+# 6. Generate report
 #
 # Input:
-#    - Human reference genome (GRCh38/hg38)
-#    - Human annotation (GRCh38/hg38)
-#    - IgH cluster and its upstream region (GRCh38/hg38)
+#    1. Genome_build (eg: GRCm38, GRCh38)
+#    2. Target region (BED3)
+#    3. Flanking distance (int, bp)
 #
 # Output:
-#    - results/sgrna/sgrna_candidates.on_target.txt
+#    - results/sgrna/sgrna_raw.on_target.txt
 #
 #    columns:
 #      1. chromosome
@@ -38,25 +37,25 @@
 #      9. sgRNA_id
 #      10. sgRNA_sequence
 #
+#
 # Gettig started:
 # $ bash workflow.sh
 
-################################################################################
-# BEGIN: GLOBAL VARIABLES                                                      #
-export GENOME_BUILD="GRCh38"
-export RELEASE=102
-export FLANKING_DISTANCE=2000000  # 2 Mbp around IgH genes
-export IgH_REGION="14"  # Human IgH is on chromosome 14
-export MIN_COPY=10      # Minimum copy number of repeat sequences
-export MIN_LENGTH=13    # Minimum length of repeat sequences
-export BOWTIE2_IDX="/data/biodata/genome_db/GRCh38/Ensembl/bowtie2_index/GRCh38"
-# export BOWTIE2_IDX=""   # will build bowtie2 index
-# END: GLOBAL VARIABLES                                                        #
-################################################################################
-
 set -e  # Exit on error
 
+################################################################################
+# BEGIN: GLOBAL VARIABLES                                                      #
 export N_CPU=12
+export GENOME_BUILD="GRCm38"
+export RELEASE=102
+export TARGET_BED="igh_regions.bed"  # Required, BED3 format
+export FLANKING_LEFT=2000000  # 2 Mbp around IgH genes
+export FLANKING_RIGHT=0  # 2 Mbp around IgH genes
+export MIN_COPY=10      # Minimum copy number of repeat sequences
+export MIN_LENGTH=13    # Minimum length of repeat sequences
+export BOWTIE2_IDX="/data/biodata/genome_db/GRCm38/Ensembl/bowtie2_index/GRCm38"   # will build bowtie2 index
+# END: GLOBAL VARIABLES                                                        #
+################################################################################
 
 ################################################################################
 # Configuration                                                                #
@@ -69,57 +68,55 @@ GENOME_GTF="${GENOME_DIR}/${GENOME_BUILD}.gtf"
 # Create necessary directories
 mkdir -p $GENOME_DIR $OUTPUT_DIR $SCRIPTS_DIR
 ################################################################################
-# Step 1: Download human reference genome if not already present
-echo "Step 1: Preparing human reference genome, annotation-GTF..."
+
+# Step 0: Check required file
+if [[ ! -f ${TARGET_BED} ]]; then
+    echo "Error: Target bed file not exists: ${TARGET_BED}"
+    exit 1
+fi
+
+# Step 1: Download reference genome if not already present
+echo "Step 1: Preparing reference genome, build bowtie2 index..."
 bash ${SCRIPTS_DIR}/01.download_genome.sh ${GENOME_BUILD} ${GENOME_DIR} ${RELEASE}
 
-# Step 2: Identify IgH gene locations
-echo "Step 2: Identifying IgH gene locations..."
-igh_regions_bed="${OUTPUT_DIR}/igh_regions.bed"
-if [ ! -f ${igh_regions_bed} ]; then
-    python ${SCRIPTS_DIR}/02.identify_igh_genes.py \
-        --gtf ${GENOME_GTF} \
-        --output ${igh_regions_bed}
+# Step 2: Prepare target bed file
+echo "Step 2: Preparing target fasta file..."
+FNAME=$(basename ${TARGET_BED} .bed)
+target_extended_bed="${OUTPUT_DIR}/${FNAME}.extended.bed"
+target_extended_fa="${OUTPUT_DIR}/${FNAME}.extended.fa"
+if [ ! -f ${target_extended_bed} ]; then
+    bash ${SCRIPTS_DIR}/02.prepare_target_bed.sh \
+        ${target_extended_bed} \
+        ${TARGET_BED} \
+        ${GENOME_FASTA} \
+        ${FLANKING_LEFT} \
+        ${FLANKING_RIGHT}
 fi
 
-# Step 3: Extract sequences from regions around IgH genes
-echo "Step 3: Extracting sequences from IgH regions and flanking regions..."
-# human, upstream, right flanking region: 2 Mbp
-flanking_bed="${OUTPUT_DIR}/igh_regions_flank_right_2Mb.bed"
-flanking_fa="${OUTPUT_DIR}/igh_regions_flank_right_2Mb.fa"
-if [ ! -f ${flanking_bed} ]; then
-    bedtools slop -l 0 -r ${FLANKING_DISTANCE} -g ${GENOME_FAI} \
-        -i ${OUTPUT_DIR}/igh_regions.bed  \
-        > ${flanking_bed}
-    bedtools getfasta -fi ${GENOME_FASTA} -bed ${flanking_bed} -fo ${flanking_fa}
-    # alternative: use samtools faidx <genome.fa> <region> > <output.fa>
-fi
-
-# Step 4: Find repeat sequences in the extracted regions
-# Using only TRF and RepeatMasker (skipping k-mer analysis and MISA)
-echo "Step 4: Finding repeat sequences..."
-raw_repeats_bed="${OUTPUT_DIR}/repeats/all_repeats.raw.bed"
-if [ ! -f ${raw_repeats_bed} ]; then
+# Step 3: Find repeat sequences in the target region
+echo "Step 3: Finding repeat sequences in the target region..."
+repeats_raw_bed="${OUTPUT_DIR}/repeats/all_repeats.raw.bed"
+if [ ! -f ${repeats_raw_bed} ]; then
     bash ${SCRIPTS_DIR}/03.find_repeats.sh \
-        ${flanking_fa} \
-        ${raw_repeats_bed} \
+        ${target_extended_fa} \
+        ${repeats_raw_bed} \
         ${MIN_LENGTH} \
         ${MIN_COPY}
 fi
 
-# Step 5: Filter repeats based on criteria (length > 13bp, copy number > 10)
-echo "Step 5: Filtering repeats based on criteria..."
+# Step 4: Filter repeats based on criteria (length > 13bp, copy number > 10)
+echo "Step 4: Filtering repeats based on criteria..."
 filtered_repeats_bed="${OUTPUT_DIR}/repeats/all_repeats.filtered.bed"
 if [ ! -f ${filtered_repeats_bed} ]; then
     python ${SCRIPTS_DIR}/05.filter_repeats.py \
-        --input ${raw_repeats_bed} \
+        --input ${repeats_raw_bed} \
         --min_length ${MIN_LENGTH} \
         --min_copy_number ${MIN_COPY} \
         --output ${filtered_repeats_bed}
 fi
 
-# Step 6: Extract sgRNA candidate loci (23bp, ending with GG)
-echo "Step 6: Extracting sgRNA candidates..."
+# Step 5: Extract sgRNA candidate loci (23bp, ending with GG)
+echo "Step 5: Extracting sgRNA candidates..."
 sgrna_txt="${OUTPUT_DIR}/sgRNA/sgrna_raw.txt"
 sgrna_fa="${sgrna_txt%.txt}.fa"
 if [ ! -f ${sgrna_fa} ]; then
@@ -128,22 +125,28 @@ if [ ! -f ${sgrna_fa} ]; then
         --output ${sgrna_txt} --size 23 --suffix GG
 fi
 
-# Step 7: Map sgRNA sequences to reference genome
+# Step 6: Remove off-target sgRNAs
 # Args: <output_dir> <sgrna.txt> <bowtie2_idx> [n_cpu] [target_regions_bed]
-echo "Step 7: remove off-target sgRNAs..."
+echo "Step 6: remove off-target sgRNAs..."
 bash ${SCRIPTS_DIR}/07.remove_off_targets.sh \
     ${OUTPUT_DIR}/sgRNA \
     ${sgrna_txt} \
     ${BOWTIE2_IDX} \
     ${N_CPU} \
-    ${OUTPUT_DIR}/igh_regions.bed
+    ${target_extended_bed}
 
-# Step 8: Generate summary and report
-echo "Step 8: Generating report..."
+# Step 7: Filter sgRNAs for better performance
+# TODO:
+
+# # Step 8: Generate summary and report
+# echo "Step 8: Generating report..."
 # python ${SCRIPTS_DIR}/08.generate_report.py \
 #     --repeats ${filtered_repeats_bed} \
 #     --igh_genes ${OUTPUT_DIR}/igh_regions.bed \
 #     --output ${OUTPUT_DIR}/report
 
+# Create symlink to the final sgRNA file
+ln -s sgRNA/sgrna_raw.on_target.txt ${OUTPUT_DIR}/
+
 echo "Pipeline completed successfully!"
-echo "Results are saved in: ${OUTPUT_DIR}/sgRNA/sgrna_raw.on_target.txt" 
+echo "Results are saved in: ${OUTPUT_DIR}/sgrna_raw.on_target.txt" 

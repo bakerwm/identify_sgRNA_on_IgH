@@ -1,21 +1,22 @@
-# Identify sgRNAs tageting IgH cluster in human genome
+# Identify sgRNAs tageting specific region
 
 ## Criteria
 + sgRNA is 23mer and ending with GG
 + sgRNA targets should be in tandom repeat (copy number > 10)
-+ sgRNA targeting IgH and its **upstream** 2 Mbp region
++ sgRNA targeting IgH and its flanking x bp region (left: X bp, right: X bp)
 + sgRNA MUST not targeting other regions (off-target)
 
 ## Pipeline Overview
 
 This pipeline performs the following steps:
 
-1. Download and prepare the human reference genome (fasta, gtf) (GRCh38)
-2. Identify IgH gene locations in the human genome (gene_name: IGH, Igh)
+1. Download and prepare reference genome (fasta, gtf)
+2. Extract target and flanking region (BED)
 3. Detect tandom repeats using Tandem Repeats Finder (TRF)
 4. Filter repeats based on criteria (length > 13bp, copy number > 10)
 5. Extract candidate sgRNA loci, 23 bp in length and ending with GG (SpCas9)
 6. Remove off-targets by genome-wide alignment
+7. (to-do) Filter sgRNA for better performance
 
 ## Requirements
 
