@@ -1,0 +1,17 @@
+name: find_sgrna
+channels:
+  - conda-forge
+  - defaults
+  - bioconda
+dependencies:
+  - python=3.9.18
+  - bowtie2=2.4.5
+  - samtools=1.6
+  - bedtools=2.30
+  - trf=4.09.1
+  - pip
+  - pip:
+    - biopython>=1.83
+    - pybedtools>=0.9.0
+    - numpy>=1.24.0 
+    - matplotlib>=3.7.2

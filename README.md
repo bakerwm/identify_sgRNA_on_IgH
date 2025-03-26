@@ -1,16 +1,16 @@
-# Identify sgRNAs tageting chromosome 21 human genome
+# Identify sgRNAs tageting chr21 of human genome
 
 ## Criteria
 + sgRNA is 23mer and ending with GG
 + sgRNA targets should be in tandom repeat (copy number > 10)
-+ sgRNA targeting chromosome 21 of human genome
-+ sgRNA MUST not targeting MOUSE genome (off-target)
++ sgRNA targeting chr21 of human genome
++ sgRNA MUST not targeting **MOUSE** genome (off-target)
 
 ## Pipeline Overview
 
 This pipeline performs the following steps:
 
-1. Download and prepare the human reference genome (fasta, gtf) (GRCh38)
+1. Download and prepare the human reference genome (fasta, gtf) (GRCh38.chr21)
 3. Detect tandom repeats using Tandem Repeats Finder (TRF)
 4. Filter repeats based on criteria (length > 13bp, copy number > 10)
 5. Extract candidate sgRNA loci, 23 bp in length and ending with GG (SpCas9)
@@ -24,11 +24,19 @@ The pipeline requires the following tools and packages:
   - pybedtools
   - biopython
   - NumPy
+- bowtie2
 - samtools
 - bedtools
 - trf (Tandem Repeats Finder)
 
 ## Usage
+
+Install and activate the conda env
+
+```bash
+conda env create -f find_sgrna.yml
+conda activate find_sgrna
+```
 
 To run the complete pipeline:
 
@@ -63,29 +71,32 @@ The pipeline generates the following outputs in the `results` directory:
 - `sgRNA/sgrna_raw.on_target.txt`: BED6+4 file of on target sgRNAs
 
 **output sgRNA**: sgRNA/sgrna_raw.on_target.txt
-    BED6+4 format, columns:
-    + 1. chr name
-    + 2. start
-    + 3. end
-    + 4. repeat_name
-    + 5. copy_number
-    + 6. strand
-    + 7. consensus_sequence
-    + 8. sgRNA_direction
-    + 9. sgRNA_id
-    + 10. sgRNA_sequence
+file: `results/sgRNA/sgrna_raw.on_target.txt`
+columns (BED6+4):
+1. chromosome  
+2. start  
+3. end  
+4. tandom_repeat_name  
+5. copy_number  
+6. strand  
+7. consensus_sequence  
+8. direction_of_sgRNA:fwd/rev  
+9. sgRNA_id  
+10. sgRNA_sequence
 
 ## Customization
 
 You can modify the following parameters in the workflow script:
 
-- `GENOME_BUILD`: GRCm38
+- `GENOME_BUILD`: GRCh38
 - `RELEASE`: Ensembl release, eg: 102
-- `GENOME_DIR`: Directory for genome files
-- `OUTPUT_DIR`: Directory for output files
+- `BOWTIE2_IDX`: Bowtie2 index, if not specified, will build in `${GENOME_DIR}`
 - `FLANKING_DISTANCE`: Flanking distance around IgH genes (default: 2 Mbp)
 - `MIN_LENGTH`: Minimum length of repeats (default: 13 bp)
 - `MIN_COPY_NUMBER`: Minimum copy number (default: 10)
+- `N_CPU`: Number of CPUs to run program (default: 12)
+- `GENOME_DIR`: Directory for genome files (default: genome)
+- `OUTPUT_DIR`: Directory for output files (default: results)
 
 ## License
 
@@ -95,4 +106,4 @@ This software is provided under the MIT License.
 
 If you use this pipeline in your research, please cite:
 
-[Citation information] 
+`https://github.com/bakerwm/identify_sgRNA_on_IgH` 
