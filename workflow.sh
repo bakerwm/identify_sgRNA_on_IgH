@@ -43,13 +43,14 @@
 
 ################################################################################
 # BEGIN: GLOBAL VARIABLES                                                      #
-GENOME_BUILD="GRCh38"
-RELEASE=102
-FLANKING_DISTANCE=2000000  # 2 Mbp around IgH genes
-IgH_REGION="14"  # Human IgH is on chromosome 14
-MIN_COPY=10      # Minimum copy number of repeat sequences
-MIN_LENGTH=13    # Minimum length of repeat sequences
-BOWTIE2_IDX="/data/biodata/genome_db/GRCh38/Ensembl/bowtie2_index/GRCh38"
+export GENOME_BUILD="GRCh38"
+export RELEASE=102
+export FLANKING_DISTANCE=2000000  # 2 Mbp around IgH genes
+export IgH_REGION="14"  # Human IgH is on chromosome 14
+export MIN_COPY=10      # Minimum copy number of repeat sequences
+export MIN_LENGTH=13    # Minimum length of repeat sequences
+export BOWTIE2_IDX="/data/biodata/genome_db/GRCh38/Ensembl/bowtie2_index/GRCh38"
+# export BOWTIE2_IDX=""   # will build bowtie2 index
 # END: GLOBAL VARIABLES                                                        #
 ################################################################################
 
@@ -145,4 +146,4 @@ echo "Step 8: Generating report..."
 #     --output ${OUTPUT_DIR}/report
 
 echo "Pipeline completed successfully!"
-echo "Results are available in ${OUTPUT_DIR} directory" 
+echo "Results are saved in: ${OUTPUT_DIR}/sgRNA/sgrna_raw.on_target.txt" 
